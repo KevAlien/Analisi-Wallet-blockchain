@@ -1,0 +1,22 @@
+# Core dependencies
+python-dotenv>=0.19.0
+web3>=5.28.0
+requests>=2.26.0
+python-telegram-bot>=20.0  # Updated for ParseMode in telegram.constants
+
+# Blockchain and API interaction
+eth-typing>=2.2.2
+eth-utils>=1.10.0
+
+# Database
+pymongo>=4.0.1
+motor>=2.5.1
+
+# Testing
+pytest>=6.2.5
+pytest-asyncio>=0.15.1
+
+# Development tools
+black>=21.9b0
+flake8>=3.9.2
+mypy>=0.910
