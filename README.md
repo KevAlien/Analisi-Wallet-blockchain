@@ -125,4 +125,4 @@ flake8 src/
 ## Donations Address
 
 If you appreciate what i do, you can support by donating here:
-- 0xc924E906371805e266F7536ACE9F076C2881d486
+- 0x2ab7e808fa5024efe1253cbf0592762ecce7e834

@@ -1,0 +1,33 @@
+# Project Rules and Patterns
+
+## Project-Specific Patterns
+- This project focuses on monitoring whale/market maker wallets on Ethereum and Arbitrum
+- Trading signals are delivered via Telegram bot
+- Core functionality revolves around transaction flow analysis
+- System follows a modular, event-driven architecture
+
+## Development Preferences
+- Python is the primary language for development
+- Use clear, descriptive variable names related to blockchain concepts
+- Follow PEP 8 style guidelines for Python code
+- Document all functions, classes, and complex logic
+- Implement proper error handling for API calls and blockchain interactions
+
+## Implementation Guidelines
+- Separate concerns between data fetching, analysis, and notification
+- Implement proper logging for debugging and monitoring
+- Design wallet registry to be easily configurable/extensible
+- Prioritize system reliability and near real-time notifications
+- Optimize for handling rate limits of blockchain explorer APIs
+
+## File Organization
+- Keep blockchain-specific code in separate modules
+- Organize code by functional components (fetching, analysis, notification)
+- Store configuration in easily modifiable files
+- Maintain test files alongside implementation
+
+## Workflow Considerations
+- Update Memory Bank regularly as the project evolves
+- Document all significant design decisions
+- Keep track of added wallet addresses and their significance
+- Monitor and document API usage patterns to avoid rate limiting
