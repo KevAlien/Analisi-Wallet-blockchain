@@ -32,7 +32,7 @@ blockchain-wallet-analysis/
 
 1. Clone the repository
    ```
-   git clone https://github.com/yourusername/blockchain-wallet-analysis.git
+   git clone https://github.com/KevAlien/Whale-Tracker.git
    cd blockchain-wallet-analysis
    ```
 
@@ -121,3 +121,8 @@ flake8 src/
 ## License
 
 [MIT License](LICENSE)
+
+## Donations Address
+
+If you appreciate what i do, you can support by donating here:
+- 0xc924E906371805e266F7536ACE9F076C2881d486
