@@ -1,90 +1,94 @@
 """
-API client for blockchain explorer APIs (Etherscan, Arbiscan)
+API client for blockchain explorer APIs using Etherscan API V2
+Migrated to V2 unified endpoint with chainid parameter support
 """
 from typing import Dict, List, Any, Optional
 import logging
 import time
 import requests
 
-from src.config.settings import ETHERSCAN_API_KEY, ARBISCAN_API_KEY
+from src.config.settings import ETHERSCAN_API_KEY
 from src.config.wallet_registry import Chain
 
 # Configure logger
 logger = logging.getLogger(__name__)
 
 class ExplorerAPIClient:
-    """Client for interacting with blockchain explorer APIs"""
-    
-    BASE_URLS = {
-        Chain.ETHEREUM: "https://api.etherscan.io/api",
-        Chain.ARBITRUM: "https://api.arbiscan.io/api"
-    }
-    
-    API_KEYS = {
-        Chain.ETHEREUM: ETHERSCAN_API_KEY,
-        Chain.ARBITRUM: ARBISCAN_API_KEY
+    """Client for interacting with Etherscan API V2 (unified multichain endpoint)"""
+
+    # V2 uses a single unified base URL
+    BASE_URL = "https://api.etherscan.io/v2/api"
+
+    # Chain ID mapping for V2 API
+    CHAIN_IDS = {
+        Chain.ETHEREUM: 1,
+        Chain.ARBITRUM: 42161
     }
     
     def __init__(self):
         """Initialize the explorer API client"""
         self.session = requests.Session()
-        
-        # Check if API keys are configured
-        for chain, api_key in self.API_KEYS.items():
-            if not api_key:
-                logger.warning(f"No API key configured for {chain.value}")
+
+        # Check if API key is configured (V2 uses single key for all chains)
+        if not ETHERSCAN_API_KEY:
+            logger.warning("No Etherscan API key configured. Set ETHERSCAN_API_KEY in your environment.")
     
     def _make_request(
-        self, 
-        chain: Chain, 
-        action: str, 
+        self,
+        chain: Chain,
+        action: str,
         params: Optional[Dict[str, Any]] = None
     ) -> Dict[str, Any]:
         """
-        Make a request to the explorer API
-        
+        Make a request to the Etherscan API V2
+
         Args:
             chain: The blockchain to query
             action: API action to perform
             params: Additional parameters for the request
-            
+
         Returns:
             API response data
         """
-        base_url = self.BASE_URLS.get(chain)
-        api_key = self.API_KEYS.get(chain)
-        
-        if not base_url or not api_key:
-            logger.error(f"Missing configuration for {chain.value}")
-            return {"status": "0", "message": "Missing API configuration"}
-        
-        # Build request parameters
+        # Get chainid for the specified chain
+        chain_id = self.CHAIN_IDS.get(chain)
+
+        if not chain_id:
+            logger.error(f"Unsupported chain: {chain.value}")
+            return {"status": "0", "message": f"Unsupported chain: {chain.value}"}
+
+        if not ETHERSCAN_API_KEY:
+            logger.error("Missing Etherscan API key")
+            return {"status": "0", "message": "Missing API key"}
+
+        # Build request parameters for V2 API
         request_params = {
+            "chainid": chain_id,  # V2 requires chainid parameter
             "module": "account" if "txlist" in action else "proxy",
             "action": action,
-            "apikey": api_key
+            "apikey": ETHERSCAN_API_KEY
         }
-        
+
         if params:
             request_params.update(params)
-            
+
         try:
-            response = self.session.get(base_url, params=request_params)
+            response = self.session.get(self.BASE_URL, params=request_params)
             response.raise_for_status()
-            
+
             data = response.json()
-            
+
             # Check for API errors
             if data.get("status") == "0" and data.get("message") != "No transactions found":
-                logger.warning(f"API error: {data.get('message')} for {chain.value}")
-            
+                logger.warning(f"API error: {data.get('message')} for {chain.value} (chainid={chain_id})")
+
             # Add a delay to respect rate limits
             time.sleep(0.2)
-            
+
             return data
-        
+
         except requests.RequestException as e:
-            logger.error(f"Request error for {chain.value}: {str(e)}")
+            logger.error(f"Request error for {chain.value} (chainid={chain_id}): {str(e)}")
             return {"status": "0", "message": f"Request error: {str(e)}"}
     
     def get_wallet_transactions(

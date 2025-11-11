@@ -38,12 +38,14 @@ nano .env  # or use your favorite editor
 
 **Required keys:**
 ```env
+# Etherscan API V2 - Single key works across all chains
 ETHERSCAN_API_KEY=your_key_here
-ARBISCAN_API_KEY=your_key_here
 INFURA_API_KEY=your_key_here
 TELEGRAM_BOT_TOKEN=your_token_here
 TELEGRAM_CHAT_ID=your_chat_id_here
 ```
+
+**Note:** With Etherscan API V2, `ARBISCAN_API_KEY` is no longer needed. The single `ETHERSCAN_API_KEY` now works for Ethereum, Arbitrum, and 60+ other supported networks.
 
 ### 3. Start the System
 
