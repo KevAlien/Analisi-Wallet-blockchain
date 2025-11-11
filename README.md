@@ -1,14 +1,32 @@
-# Blockchain Wallet Analysis
+# 🐋 Blockchain Wallet Analysis with AI Reasoning
 
-A tool for tracking whale and market maker wallet activities on Ethereum and Arbitrum, analyzing transaction flows, and generating real-time trading signals delivered via Telegram.
+An advanced tool for tracking whale and market maker wallet activities on Ethereum and Arbitrum. Features **AI-powered reasoning** to analyze transaction flows, detect patterns, and generate intelligent trading signals delivered via Telegram.
 
-## Features
+## ✨ What's New: AI Reasoning Agent
 
-- Monitor whale and market maker wallet transactions
-- Analyze transaction patterns and fund flows
-- Generate trading signals based on significant movements
-- Deliver alerts via Telegram bot
-- Support for Ethereum and Arbitrum blockchains
+- **🤖 Multiple LLM Backends**: Supports Ollama (local), LMStudio (local), Claude, and OpenAI
+- **🧠 Intelligent Analysis**: AI reasoning loops correlate multi-chain events and historical patterns
+- **📊 Enhanced Signals**: Detailed reasoning chains explain WHY a signal was generated
+- **🔄 Automatic Fallback**: Gracefully falls back to rule-based analysis if LLM unavailable
+- **⚡ Optimized for Speed**: Batch processing and circuit breakers prevent delays
+- **🐳 Docker Ready**: Complete containerization with Ollama included
+
+## 🎯 Features
+
+### Core Features
+- ✅ Monitor whale and market maker wallet transactions
+- ✅ Analyze transaction patterns and fund flows
+- ✅ Generate trading signals based on significant movements
+- ✅ Deliver alerts via Telegram bot
+- ✅ Support for Ethereum and Arbitrum blockchains
+
+### AI-Powered Analysis
+- 🤖 **Reasoning Loop**: Multi-step analysis with context awareness
+- 🔗 **Cross-Chain Correlation**: Detect coordinated movements across chains
+- 📈 **Historical Pattern Recognition**: Learn from wallet behavior history
+- 🎯 **Market Context Integration**: Factor in current market conditions
+- 💡 **Actionable Recommendations**: Get suggested actions with each signal
+- 🧠 **Transparent Reasoning**: See the AI's thought process step-by-step
 
 ## Project Structure
 
@@ -28,16 +46,53 @@ blockchain-wallet-analysis/
 └── requirements.txt          # Python dependencies
 ```
 
-## Installation
+## 🚀 Quick Start (Docker - Recommended)
+
+### Prerequisites
+- Docker & Docker Compose
+- API keys (Etherscan, Arbiscan, Infura, Telegram)
+
+### Setup
+
+```bash
+# 1. Clone repository
+git clone https://github.com/KevAlien/Analisi-Wallet-blockchain.git
+cd Analisi-Wallet-blockchain
+
+# 2. Run setup script
+chmod +x scripts/setup.sh
+./scripts/setup.sh
+
+# 3. Configure .env with your API keys
+nano .env
+
+# 4. Start services
+docker-compose up -d
+
+# 5. View logs
+docker-compose logs -f whale-tracker
+```
+
+**That's it!** The system will:
+- ✅ Download Ollama and llama3.1:8b model automatically
+- ✅ Start monitoring whale wallets
+- ✅ Send AI-enhanced signals to your Telegram
+
+**For detailed Docker setup:** See [DOCKER_SETUP.md](DOCKER_SETUP.md)
+
+## 💻 Installation (Manual)
+
+<details>
+<summary>Click to expand manual installation steps</summary>
 
 1. Clone the repository
-   ```
-   git clone https://github.com/KevAlien/Whale-Tracker.git
-   cd blockchain-wallet-analysis
+   ```bash
+   git clone https://github.com/KevAlien/Analisi-Wallet-blockchain.git
+   cd Analisi-Wallet-blockchain
    ```
 
 2. Create and activate a virtual environment
-   ```
+   ```bash
    python -m venv venv
    # On Windows
    venv\Scripts\activate
@@ -46,15 +101,56 @@ blockchain-wallet-analysis/
    ```
 
 3. Install dependencies
-   ```
+   ```bash
    pip install -r requirements.txt
    ```
 
 4. Set up environment variables
-   ```
+   ```bash
    cp .env.example .env
+   # Edit .env with your API keys
    ```
-   Edit the `.env` file with your API keys and configuration.
+
+5. (Optional) Install local LLM
+   - **Ollama**: [Download](https://ollama.ai) and run `ollama pull llama3.1:8b`
+   - **LMStudio**: [Download](https://lmstudio.ai) and load a model
+
+</details>
+
+## 📱 Example AI-Enhanced Signal
+
+**Traditional Rule-Based Alert:**
+```
+🔴 DISTRIBUTION SIGNAL ⭐⭐⭐
+💰 Value: 500.00 ETH
+👛 Wallet: 0xabc...def (whale)
+⛓️ Chain: Ethereum
+```
+
+**AI-Enhanced Alert with Reasoning:**
+```
+🔴 DISTRIBUTION SIGNAL ⭐⭐⭐⭐
+💰 Value: 500.00 ETH
+👛 Wallet: Vitalik Buterin (whale)
+⛓️ Chain: Ethereum
+
+🧠 AI REASONING:
+  1. Wallet historically accumulates during dips, sells during pumps
+  2. This deposit to Binance follows 15% price increase in last 48h
+  3. Correlated with 2 other whale deposits within 30 minutes
+  4. Market context: Strong bullish trend, high volume
+  5. Pattern matches historical behavior before -20% corrections
+
+📈 Predicted Impact: BEARISH
+💡 Recommended Actions:
+  • Monitor for additional whale deposits in next 2 hours
+  • Consider reducing long exposure
+  • Watch for price action near $3,500 support
+
+🔗 Correlations:
+  • Whale B deposited 300 ETH to Coinbase 15 min ago
+  • Arbitrum whale activity increased 40% in last hour
+```
 
 ## API Keys Required
 
