@@ -50,7 +50,7 @@ blockchain-wallet-analysis/
 
 ### Prerequisites
 - Docker & Docker Compose
-- API keys (Etherscan, Arbiscan, Infura, Telegram)
+- API keys (Etherscan V2, Infura, Telegram)
 
 ### Setup
 
@@ -154,8 +154,9 @@ docker-compose logs -f whale-tracker
 
 ## API Keys Required
 
-- **Etherscan API Key**: Sign up at [Etherscan](https://etherscan.io/apis)
-- **Arbiscan API Key**: Sign up at [Arbiscan](https://arbiscan.io/apis)
+- **Etherscan API Key (V2)**: Sign up at [Etherscan](https://etherscan.io/apis)
+  - Single API key now works across all 60+ supported chains (Ethereum, Arbitrum, Base, etc.)
+  - No need for separate Arbiscan API key anymore
 - **Telegram Bot Token**: Create a bot using [BotFather](https://t.me/botfather)
 - **Infura API Key**: Sign up at [Infura](https://infura.io/) for blockchain RPC endpoints
 

@@ -22,8 +22,11 @@ except ImportError:
         print("Warning: .env file not found. Using default values.")
 
 # API Keys
+# Etherscan API V2: Single API key works across all supported chains
 ETHERSCAN_API_KEY = os.getenv("ETHERSCAN_API_KEY")
-ARBISCAN_API_KEY = os.getenv("ARBISCAN_API_KEY")
+# Deprecated: ARBISCAN_API_KEY is no longer needed with Etherscan API V2
+# The single ETHERSCAN_API_KEY now works for all chains including Arbitrum
+ARBISCAN_API_KEY = os.getenv("ARBISCAN_API_KEY")  # Kept for backward compatibility
 TELEGRAM_BOT_TOKEN = os.getenv("TELEGRAM_BOT_TOKEN")
 
 # Blockchain RPC endpoints
