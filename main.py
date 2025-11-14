@@ -15,7 +15,7 @@ from src.config.llm_config import LLMConfig
 from src.fetching.blockchain_client import BlockchainClient
 from src.fetching.explorer_api import ExplorerAPIClient
 from src.analysis.transaction_analyzer import TransactionAnalyzer
-from src.signals.signal_generator import SignalGenerator, Signal
+from src.signals.signal_generator import SignalGenerator, Signal, SignalType, SignalStrength
 from src.signals.enhanced_signal import EnhancedSignal, create_signal_from_analysis
 from src.notifications.telegram_bot import TelegramNotifier
 from src.reasoning.agent_orchestrator import ReasoningAgentOrchestrator
@@ -254,8 +254,8 @@ async def run_test():
         
         # Test Telegram delivery
         test_signal = Signal(
-            signal_type=signal_generator._signal_type.__class__.ACCUMULATION,
-            strength=signal_generator._determine_signal_strength(1000),
+            signal_type=SignalType.ACCUMULATION,
+            strength=SignalStrength.VERY_HIGH,
             transaction_hash="0x0123456789abcdef0123456789abcdef0123456789abcdef0123456789abcdef",
             wallet_address="0x0123456789abcdef0123456789abcdef01234567",
             wallet_name="Test Whale",
