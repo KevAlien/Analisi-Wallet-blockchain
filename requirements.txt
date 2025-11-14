@@ -9,10 +9,10 @@ python-dotenv==1.0.0
 anthropic==0.34.0
 openai==1.3.5
 
-# Trading & Data Analysis 
-numpy==1.26.4
-pandas==2.1.4
+# Trading & Data Analysis
+numpy>=2.0.0
+pandas>=2.2.0
 
 # Utilities
-aiohttp==3.9.1
+aiohttp>=3.10.0
 requests==2.31.0
