@@ -94,16 +94,42 @@ docker-compose logs -f whale-tracker
 2. Create and activate a virtual environment
    ```bash
    python -m venv venv
-   # On Windows
-   venv\Scripts\activate
+   ```
+
+   **Activate the virtual environment:**
+   ```bash
+   # On Windows (Command Prompt)
+   venv\Scripts\activate.bat
+
+   # On Windows (PowerShell)
+   venv\Scripts\Activate.ps1
+
    # On macOS/Linux
    source venv/bin/activate
+   ```
+
+   **Important for Windows PowerShell users:**
+   If you get an execution policy error, run this first:
+   ```powershell
+   Set-ExecutionPolicy -ExecutionPolicy RemoteSigned -Scope CurrentUser
+   ```
+
+   **Verify you're in the virtual environment:**
+   ```bash
+   # You should see (venv) in your terminal prompt
+   # Check Python location:
+   which python    # macOS/Linux
+   where python    # Windows
+
+   # The path should point to your venv directory
    ```
 
 3. Install dependencies
    ```bash
    pip install -r requirements.txt
    ```
+
+   **Note:** This project requires Python 3.9-3.12. Python 3.13 is not yet fully supported due to pandas/numpy compatibility.
 
 4. Set up environment variables
    ```bash
