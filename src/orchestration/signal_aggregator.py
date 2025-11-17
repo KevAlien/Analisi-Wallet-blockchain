@@ -47,6 +47,9 @@ class AggregatedSignal:
     ai_reasoning: Optional[str] = None
     ai_recommendation: Optional[str] = None
 
+    # Position recommendation
+    position_type: str = "NEUTRAL"  # LONG, SHORT, or NEUTRAL
+
     # Trade parameters
     recommended_entry: Optional[float] = None
     recommended_stop_loss: Optional[float] = None
@@ -73,6 +76,7 @@ class AggregatedSignal:
             'ta_signals_count': len(self.ta_signals),
             'ai_reasoning': self.ai_reasoning,
             'ai_recommendation': self.ai_recommendation,
+            'position_type': self.position_type,
             'recommended_entry': self.recommended_entry,
             'recommended_stop_loss': self.recommended_stop_loss,
             'recommended_take_profit': self.recommended_take_profit,
@@ -134,6 +138,9 @@ class SignalAggregator:
         # Determine signal type based on aggregate score
         signal_type = self._determine_signal_type(aggregate_score)
 
+        # Determine position type (LONG, SHORT, or NEUTRAL)
+        position_type = self._determine_position_type(aggregate_score, signal_type)
+
         # Calculate confidence (0-100)
         confidence = self._calculate_confidence(on_chain_signals, ta_signals, aggregate_score)
 
@@ -141,7 +148,9 @@ class SignalAggregator:
         contributing_factors = self._extract_contributing_factors(on_chain_signals, ta_signals)
 
         # Calculate trade parameters (use TA signals for these)
-        entry, stop_loss, take_profit = self._calculate_trade_parameters(ta_signals, current_price)
+        entry, stop_loss, take_profit = self._calculate_trade_parameters(
+            ta_signals, current_price, position_type
+        )
 
         # Create aggregated signal
         aggregated = AggregatedSignal(
@@ -152,6 +161,7 @@ class SignalAggregator:
             price=current_price,
             on_chain_signals=on_chain_signals,
             ta_signals=ta_signals,
+            position_type=position_type,
             recommended_entry=entry,
             recommended_stop_loss=stop_loss,
             recommended_take_profit=take_profit,
@@ -251,6 +261,27 @@ class SignalAggregator:
         else:
             return AggregatedSignalType.NEUTRAL
 
+    def _determine_position_type(self, aggregate_score: float,
+                                 signal_type: AggregatedSignalType) -> str:
+        """
+        Determine position type (LONG, SHORT, or NEUTRAL) from aggregate score.
+
+        Args:
+            aggregate_score: Aggregate score from -1 to +1
+            signal_type: The determined signal type
+
+        Returns:
+            Position type: "LONG", "SHORT", or "NEUTRAL"
+        """
+        # Bearish signals (negative score) -> SHORT
+        if aggregate_score <= -0.1:
+            return "SHORT"
+        # Bullish signals (positive score) -> LONG
+        elif aggregate_score >= 0.1:
+            return "LONG"
+        else:
+            return "NEUTRAL"
+
     def _calculate_confidence(self, on_chain_signals: List, ta_signals: List,
                              aggregate_score: float) -> float:
         """Calculate confidence level (0-100)."""
@@ -281,13 +312,39 @@ class SignalAggregator:
         return factors[:10]  # Max 10 factors
 
     def _calculate_trade_parameters(self, ta_signals: List[TASignal],
-                                   current_price: float) -> tuple:
-        """Calculate recommended trade parameters from TA signals."""
+                                   current_price: float,
+                                   position_type: str) -> tuple:
+        """
+        Calculate recommended trade parameters from TA signals.
+
+        Args:
+            ta_signals: List of technical analysis signals
+            current_price: Current market price
+            position_type: Position type (LONG, SHORT, or NEUTRAL)
+
+        Returns:
+            Tuple of (entry, stop_loss, take_profit)
+        """
         if not ta_signals:
             return current_price, None, None
 
+        # Filter signals that match the position type
+        matching_signals = []
+        for signal in ta_signals:
+            if position_type == "SHORT" and signal.signal_type == SignalType.SHORT:
+                matching_signals.append(signal)
+            elif position_type == "LONG" and signal.signal_type == SignalType.LONG:
+                matching_signals.append(signal)
+
+        # If no matching signals, use the strongest signal
+        if not matching_signals:
+            matching_signals = ta_signals
+
         # Use the strongest signal for trade parameters
-        strongest_signal = max(ta_signals, key=lambda s: s.strength.value if hasattr(s.strength, 'value') else 0)
+        strongest_signal = max(
+            matching_signals,
+            key=lambda s: s.strength.value if hasattr(s.strength, 'value') else 0
+        )
 
         return (
             current_price,  # Entry at current price

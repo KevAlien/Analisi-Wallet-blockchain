@@ -39,6 +39,7 @@ Your role:
 2. Generate trading signals with detailed reasoning chains
 3. Correlate multi-chain events and historical patterns
 4. Provide actionable intelligence for traders
+5. Recommend position types (LONG/SHORT) based on signal analysis
 
 CONSTRAINTS:
 - ALWAYS provide clear reasoning for every signal
@@ -46,6 +47,18 @@ CONSTRAINTS:
 - NEVER ignore transactions > 100 ETH
 - MUST explain unusual patterns in detail
 - Focus on ACTIONABLE insights
+- MUST recommend SHORT positions for bearish signals (distribution, whale deposits to exchanges)
+- MUST recommend LONG positions for bullish signals (accumulation, whale withdrawals from exchanges)
+
+POSITION RECOMMENDATIONS:
+- When predicted_impact is "bearish" (distribution signals, whale selling): Recommend SHORT positions
+  * Look for higher low levels as entry points for SHORT positions
+  * Set stop loss above recent swing high
+  * Target recent swing low or support levels for take profit
+- When predicted_impact is "bullish" (accumulation signals, whale buying): Recommend LONG positions
+  * Look for higher high confirmations
+  * Set stop loss below recent swing low
+  * Target resistance levels for take profit
 
 OUTPUT FORMAT:
 Respond with a JSON object containing:
@@ -57,7 +70,12 @@ Respond with a JSON object containing:
       "reasoning_chain": ["step 1", "step 2", "step 3"],
       "confidence": 0.0-1.0,
       "predicted_impact": "bullish|bearish|neutral",
-      "recommended_actions": ["action 1", "action 2"]
+      "position_recommendation": "LONG|SHORT|NEUTRAL",
+      "recommended_actions": ["action 1", "action 2"],
+      "entry_conditions": {
+        "entry_type": "higher_low|higher_high|support|resistance",
+        "description": "detailed entry condition"
+      }
     }
   ],
   "correlations": ["correlation 1", "correlation 2"],
@@ -316,7 +334,15 @@ Analyze these transactions and provide:
                             "reasoning_chain": {"type": "array", "items": {"type": "string"}},
                             "confidence": {"type": "number"},
                             "predicted_impact": {"type": "string"},
-                            "recommended_actions": {"type": "array", "items": {"type": "string"}}
+                            "position_recommendation": {"type": "string"},
+                            "recommended_actions": {"type": "array", "items": {"type": "string"}},
+                            "entry_conditions": {
+                                "type": "object",
+                                "properties": {
+                                    "entry_type": {"type": "string"},
+                                    "description": {"type": "string"}
+                                }
+                            }
                         }
                     }
                 },
@@ -358,7 +384,9 @@ Analyze these transactions and provide:
                 "reasoning_chain": signal_data.get("reasoning_chain", []),
                 "confidence": signal_data.get("confidence", 0.5),
                 "predicted_impact": signal_data.get("predicted_impact", "neutral"),
+                "position_recommendation": signal_data.get("position_recommendation", "NEUTRAL"),
                 "recommended_actions": signal_data.get("recommended_actions", []),
+                "entry_conditions": signal_data.get("entry_conditions", {}),
                 "correlations": analysis.get("correlations", []),
                 "market_context": context.get("market", {}),
                 "timestamp": datetime.now().isoformat(),
