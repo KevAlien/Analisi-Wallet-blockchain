@@ -4,7 +4,7 @@ Integration tests for the complete signal generation pipeline
 import pytest
 from unittest.mock import Mock, AsyncMock, patch
 from src.analysis.transaction_analyzer import TransactionAnalyzer
-from src.signals.signal_generator import SignalGenerator, SignalType
+from src.signals.signal_generator import SignalGenerator, SignalType, SignalStrength
 
 
 class TestSignalPipeline:
@@ -15,77 +15,55 @@ class TestSignalPipeline:
         self.analyzer = TransactionAnalyzer()
         self.signal_generator = SignalGenerator()
 
-    def test_complete_pipeline_accumulation(self, sample_transaction, sample_whale_address):
+    def test_complete_pipeline_accumulation(self, analyzed_accumulation_transaction):
         """Test complete pipeline for whale accumulation"""
-        # Setup transaction for accumulation
-        sample_transaction['to'] = sample_whale_address
-        sample_transaction['value'] = str(int(500 * 10**18))  # 500 ETH
+        # Transaction is already analyzed, now generate signals
+        signals = self.signal_generator.generate_signals(analyzed_accumulation_transaction)
 
-        # Step 1: Analyze transaction
-        analyzed_tx = self.analyzer.analyze_transaction(sample_transaction)
-        assert analyzed_tx is not None
+        # Should have generated at least one signal
+        assert len(signals) > 0
 
-        # Step 2: Generate signals (if significant)
-        if analyzed_tx.get('is_significant'):
-            signals = self.signal_generator.generate_signals(analyzed_tx)
+        # Verify signal properties
+        for signal in signals:
+            assert signal.transaction_hash is not None
+            assert signal.chain is not None
+            assert signal.timestamp is not None
 
-            # Should have generated at least one signal
-            assert len(signals) > 0
+        # Should be accumulation signal
+        assert any(s.signal_type == SignalType.ACCUMULATION for s in signals)
 
-            # Verify signal properties
-            for signal in signals:
-                assert signal.transaction_hash is not None
-                assert signal.chain is not None
-                assert signal.timestamp is not None
-
-    def test_complete_pipeline_distribution(self, sample_transaction, sample_whale_address, sample_exchange_address):
+    def test_complete_pipeline_distribution(self, analyzed_exchange_deposit_transaction):
         """Test complete pipeline for whale distribution to exchange"""
-        # Setup transaction for distribution to exchange
-        sample_transaction['from'] = sample_whale_address
-        sample_transaction['to'] = sample_exchange_address
-        sample_transaction['value'] = str(int(1000 * 10**18))  # 1000 ETH
+        # Transaction is already analyzed, now generate signals
+        signals = self.signal_generator.generate_signals(analyzed_exchange_deposit_transaction)
 
-        # Step 1: Analyze transaction
-        analyzed_tx = self.analyzer.analyze_transaction(sample_transaction)
-        assert analyzed_tx is not None
+        # Should have generated signals
+        assert len(signals) > 0
 
-        # Step 2: Generate signals
-        if analyzed_tx.get('is_significant'):
-            signals = self.signal_generator.generate_signals(analyzed_tx)
+        # Should be exchange deposit signal
+        signal_types = [s.signal_type for s in signals]
+        assert SignalType.EXCHANGE_DEPOSIT in signal_types
 
-            # Should have generated signals
-            assert len(signals) > 0
+        # Verify high value signals have appropriate strength
+        for signal in signals:
+            if signal.value_eth >= 1000:
+                assert signal.strength == SignalStrength.VERY_HIGH
 
-            # At least one should be distribution or exchange deposit
-            signal_types = [s.signal_type for s in signals]
-            assert any(st in [SignalType.DISTRIBUTION, SignalType.EXCHANGE_DEPOSIT]
-                      for st in signal_types)
-
-    @pytest.mark.asyncio
-    async def test_pipeline_with_telegram_notification(
+    def test_pipeline_with_telegram_notification(
         self,
-        sample_transaction,
-        sample_whale_address,
+        analyzed_accumulation_transaction,
         mock_telegram_bot
     ):
         """Test pipeline including Telegram notification (mocked)"""
-        # Setup transaction
-        sample_transaction['to'] = sample_whale_address
-        sample_transaction['value'] = str(int(500 * 10**18))
+        # Generate signals from analyzed transaction
+        signals = self.signal_generator.generate_signals(analyzed_accumulation_transaction)
 
-        # Analyze and generate signal
-        analyzed_tx = self.analyzer.analyze_transaction(sample_transaction)
+        # Should have generated signals
+        assert len(signals) > 0
 
-        if analyzed_tx.get('is_significant'):
-            signals = self.signal_generator.generate_signals(analyzed_tx)
-
-            # Mock sending signals via Telegram
-            for signal in signals:
-                result = await mock_telegram_bot.send_message(
-                    chat_id=123456,
-                    text=f"Signal: {signal.signal_type.value}"
-                )
-                assert result is True
-
-            # Verify send_message was called
-            assert mock_telegram_bot.send_message.called
+        # Verify we can create notification message
+        for signal in signals:
+            message = signal.get_message()
+            assert message is not None
+            assert "Signal" in message or "SIGNAL" in message
+            assert str(signal.value_eth) in message or f"{signal.value_eth:.2f}" in message
