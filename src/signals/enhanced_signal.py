@@ -42,6 +42,8 @@ class EnhancedSignal(Signal):
         related_transactions: Optional[List[str]] = None,
         confidence: float = 0.0,
         tags: Optional[List[str]] = None,
+        position_recommendation: Optional[str] = None,
+        entry_conditions: Optional[Dict[str, Any]] = None,
     ):
         """
         Initialize enhanced signal
@@ -52,6 +54,8 @@ class EnhancedSignal(Signal):
             recommended_actions: List of suggested actions
             correlations: Related correlation findings
             market_context: Current market conditions
+            position_recommendation: LONG, SHORT, or NEUTRAL position type
+            entry_conditions: Conditions for position entry (e.g., higher_low_level, resistance_level)
             ... (other args from base Signal)
         """
         super().__init__(
@@ -76,6 +80,18 @@ class EnhancedSignal(Signal):
         self.correlations = correlations or []
         self.market_context = market_context or {}
 
+        # Automatically determine position recommendation from predicted_impact if not provided
+        if position_recommendation is None:
+            if predicted_impact.lower() == "bearish":
+                position_recommendation = "SHORT"
+            elif predicted_impact.lower() == "bullish":
+                position_recommendation = "LONG"
+            else:
+                position_recommendation = "NEUTRAL"
+
+        self.position_recommendation = position_recommendation
+        self.entry_conditions = entry_conditions or {}
+
     def to_dict(self) -> Dict[str, Any]:
         """Convert enhanced signal to dictionary"""
         base_dict = super().to_dict()
@@ -85,7 +101,9 @@ class EnhancedSignal(Signal):
             "predicted_impact": self.predicted_impact,
             "recommended_actions": self.recommended_actions,
             "correlations": self.correlations,
-            "market_context": self.market_context
+            "market_context": self.market_context,
+            "position_recommendation": self.position_recommendation,
+            "entry_conditions": self.entry_conditions
         })
 
         return base_dict
@@ -109,6 +127,21 @@ class EnhancedSignal(Signal):
 
         impact_section = f"\n{impact_emoji} **Predicted Impact:** {self.predicted_impact.upper()}\n"
 
+        # Add position recommendation
+        position_section = ""
+        if self.position_recommendation and self.position_recommendation != "NEUTRAL":
+            position_emoji = "🔴" if self.position_recommendation == "SHORT" else "🟢"
+            position_section = f"\n{position_emoji} **Position:** {self.position_recommendation}\n"
+
+            # Add entry conditions if available
+            if self.entry_conditions:
+                if "entry_level" in self.entry_conditions:
+                    position_section += f"  📍 Entry Level: {self.entry_conditions['entry_level']}\n"
+                if "stop_loss" in self.entry_conditions:
+                    position_section += f"  🛑 Stop Loss: {self.entry_conditions['stop_loss']}\n"
+                if "take_profit" in self.entry_conditions:
+                    position_section += f"  🎯 Take Profit: {self.entry_conditions['take_profit']}\n"
+
         # Add recommended actions
         actions_section = ""
         if self.recommended_actions:
@@ -128,6 +161,7 @@ class EnhancedSignal(Signal):
             base_message +
             reasoning_section +
             impact_section +
+            position_section +
             actions_section +
             correlations_section
         )
@@ -191,7 +225,9 @@ class EnhancedSignal(Signal):
             correlations=reasoning_output.get("correlations", []),
             market_context=reasoning_output.get("market_context", {}),
             confidence=reasoning_output.get("confidence", 0.5),
-            tags=reasoning_output.get("tags", [])
+            tags=reasoning_output.get("tags", []),
+            position_recommendation=reasoning_output.get("position_recommendation"),
+            entry_conditions=reasoning_output.get("entry_conditions", {})
         )
 
 
