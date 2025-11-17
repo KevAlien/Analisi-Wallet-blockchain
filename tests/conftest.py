@@ -1,10 +1,19 @@
 """
 Pytest configuration and fixtures for testing
+
+This module provides shared fixtures and test utilities for the blockchain
+wallet analysis test suite. Fixtures are organized by category:
+- Environment setup (mock_env_vars)
+- Basic data (sample_transaction, sample_whale_address, etc.)
+- Analyzed transactions (for testing signal generation)
+- Mock objects (mock_telegram_bot, mock_blockchain_client)
+- Helper utilities (assert_signal_valid, create_test_transaction)
 """
 import pytest
 import os
 from datetime import datetime
 from unittest.mock import Mock, AsyncMock
+from typing import Dict, Any
 
 
 @pytest.fixture
@@ -157,3 +166,123 @@ def analyzed_exchange_deposit_transaction(sample_whale_address, sample_exchange_
         "to_wallet_info": None,
         "counterparty_category": "exchange"
     }
+
+
+# ============================================================================
+# Test Helper Functions
+# ============================================================================
+
+def create_test_transaction(
+    value_eth: float = 100.0,
+    direction: str = "incoming",
+    whale_address: str = "0x1234567890abcdef1234567890abcdef12345678",
+    is_significant: bool = True,
+    **kwargs
+) -> Dict[str, Any]:
+    """
+    Helper function to create test transaction with custom parameters.
+
+    Args:
+        value_eth: Transaction value in ETH
+        direction: "incoming", "outgoing", or "internal"
+        whale_address: Address of the whale wallet
+        is_significant: Whether transaction meets significance threshold
+        **kwargs: Additional fields to override
+
+    Returns:
+        Dictionary with transaction data
+
+    Example:
+        >>> tx = create_test_transaction(value_eth=500, direction="outgoing")
+        >>> assert tx['value_eth'] == 500
+    """
+    base_tx = {
+        "hash": kwargs.get("hash", "0x" + "a" * 64),
+        "from": kwargs.get("from", "0x" + "b" * 40),
+        "to": kwargs.get("to", whale_address if direction == "incoming" else "0x" + "c" * 40),
+        "value": str(int(value_eth * 10**18)),
+        "blockNumber": kwargs.get("blockNumber", "12345678"),
+        "timeStamp": kwargs.get("timeStamp", str(int(datetime.now().timestamp()))),
+        "chain": kwargs.get("chain", "ethereum"),
+        "value_eth": value_eth,
+        "is_significant": is_significant,
+        "direction": direction,
+        "transaction_type": kwargs.get("transaction_type", "transfer"),
+        "type_confidence": kwargs.get("type_confidence", 0.9),
+        "threshold_used": kwargs.get("threshold_used", 100.0),
+    }
+
+    # Add wallet info based on direction
+    if direction == "incoming":
+        base_tx["from_wallet_info"] = None
+        base_tx["to_wallet_info"] = {
+            "address": whale_address,
+            "name": "Test Whale",
+            "category": "whale",
+            "tags": ["test"]
+        }
+    elif direction == "outgoing":
+        base_tx["from_wallet_info"] = {
+            "address": whale_address,
+            "name": "Test Whale",
+            "category": "whale",
+            "tags": ["test"]
+        }
+        base_tx["to_wallet_info"] = None
+    else:  # internal
+        base_tx["from_wallet_info"] = {
+            "address": whale_address,
+            "name": "Test Whale",
+            "category": "whale",
+            "tags": ["test"]
+        }
+        base_tx["to_wallet_info"] = {
+            "address": kwargs.get("to", "0x" + "c" * 40),
+            "name": "Test Whale 2",
+            "category": "whale",
+            "tags": ["test"]
+        }
+
+    # Apply any additional overrides
+    base_tx.update(kwargs)
+    return base_tx
+
+
+def assert_signal_valid(signal, expected_type=None, min_value=None):
+    """
+    Helper function to validate signal object has required properties.
+
+    Args:
+        signal: Signal object to validate
+        expected_type: Expected SignalType (optional)
+        min_value: Minimum expected value in ETH (optional)
+
+    Raises:
+        AssertionError: If signal is invalid
+
+    Example:
+        >>> assert_signal_valid(signal, SignalType.ACCUMULATION, min_value=100)
+    """
+    # Check required fields
+    assert signal is not None, "Signal is None"
+    assert hasattr(signal, 'signal_type'), "Signal missing signal_type"
+    assert hasattr(signal, 'strength'), "Signal missing strength"
+    assert hasattr(signal, 'transaction_hash'), "Signal missing transaction_hash"
+    assert hasattr(signal, 'wallet_address'), "Signal missing wallet_address"
+    assert hasattr(signal, 'chain'), "Signal missing chain"
+    assert hasattr(signal, 'value_eth'), "Signal missing value_eth"
+    assert hasattr(signal, 'timestamp'), "Signal missing timestamp"
+
+    # Check optional conditions
+    if expected_type is not None:
+        assert signal.signal_type == expected_type, \
+            f"Expected signal type {expected_type}, got {signal.signal_type}"
+
+    if min_value is not None:
+        assert signal.value_eth >= min_value, \
+            f"Expected value >= {min_value} ETH, got {signal.value_eth} ETH"
+
+    # Validate data types
+    assert isinstance(signal.value_eth, (int, float)), "value_eth must be numeric"
+    assert signal.value_eth >= 0, "value_eth cannot be negative"
+    assert signal.transaction_hash.startswith('0x'), "Invalid transaction hash format"
