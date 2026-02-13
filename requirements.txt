@@ -16,3 +16,20 @@ pandas>=2.2.0
 # Utilities
 aiohttp>=3.10.0
 requests==2.31.0
+
+# --- SaaS API Layer ---
+fastapi>=0.115.0
+uvicorn[standard]>=0.30.0
+pydantic[email]>=2.7.0
+
+# Authentication
+PyJWT>=2.8.0
+passlib[bcrypt]>=1.7.4
+bcrypt>=4.0.1,<4.1.0
+
+# Database
+motor>=3.4.0
+pymongo>=4.7.0
+
+# Redis (caching, rate limiting)
+redis>=5.0.0

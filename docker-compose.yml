@@ -1,59 +1,154 @@
 version: '3.8'
 
 services:
-  # Main Whale Tracker application
-  whale-tracker:
+  # ============================================
+  # SaaS API Server (FastAPI)
+  # ============================================
+  api:
     build:
       context: .
       dockerfile: Dockerfile
-    container_name: whale-tracker
+    container_name: whale-tracker-api
     restart: unless-stopped
+    command: ["python", "api_server.py", "--host", "0.0.0.0", "--port", "8000"]
+    ports:
+      - "8000:8000"
     environment:
+      # API Configuration
+      - JWT_SECRET=${JWT_SECRET:-change-me-in-production}
+      - JWT_EXPIRATION_HOURS=${JWT_EXPIRATION_HOURS:-24}
+      - CORS_ORIGINS=${CORS_ORIGINS:-*}
+
+      # Database
+      - MONGODB_URI=mongodb://mongodb:27017
+      - DATABASE_NAME=${DATABASE_NAME:-whale_tracker}
+      - REDIS_URL=redis://redis:6379
+
+      # LLM Configuration
+      - LLM_PROVIDER=${LLM_PROVIDER:-ollama}
+      - ENABLE_REASONING=${ENABLE_REASONING:-true}
+      - OLLAMA_URL=http://ollama:11434
+      - OLLAMA_MODEL=${OLLAMA_MODEL:-llama3.1:8b}
+      - CLAUDE_API_KEY=${CLAUDE_API_KEY:-}
+      - CLAUDE_MODEL=${CLAUDE_MODEL:-claude-sonnet-4-5-20250929}
+      - OPENAI_API_KEY=${OPENAI_API_KEY:-}
+      - OPENAI_MODEL=${OPENAI_MODEL:-gpt-4o}
+
+      # Blockchain API Keys
+      - ETHERSCAN_API_KEY=${ETHERSCAN_API_KEY:-}
+      - INFURA_API_KEY=${INFURA_API_KEY:-}
+
+      # Market Data
+      - PRICE_SOURCE=${PRICE_SOURCE:-BINANCE}
+    volumes:
+      - ./logs:/app/logs
+    depends_on:
+      - mongodb
+      - redis
+    networks:
+      - whale-tracker-network
+    extra_hosts:
+      - "host.docker.internal:host-gateway"
+    healthcheck:
+      test: ["CMD", "python", "-c", "import httpx; httpx.get('http://localhost:8000/api/v1/health')"]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+
+  # ============================================
+  # Background Worker (Whale Tracker + Trading Bot)
+  # ============================================
+  worker:
+    build:
+      context: .
+      dockerfile: Dockerfile
+    container_name: whale-tracker-worker
+    restart: unless-stopped
+    command: ["python", "main.py"]
+    environment:
+      # Database
+      - MONGODB_URI=mongodb://mongodb:27017
+      - DATABASE_NAME=${DATABASE_NAME:-whale_tracker}
+      - REDIS_URL=redis://redis:6379
+
       # LLM Configuration
       - LLM_PROVIDER=${LLM_PROVIDER:-ollama}
       - ENABLE_REASONING=${ENABLE_REASONING:-true}
       - MAX_REASONING_ITERATIONS=${MAX_REASONING_ITERATIONS:-5}
       - REASONING_TIMEOUT=${REASONING_TIMEOUT:-30}
-
-      # LMStudio (host machine)
       - LMSTUDIO_URL=${LMSTUDIO_URL:-http://host.docker.internal:1234/v1}
       - LMSTUDIO_MODEL=${LMSTUDIO_MODEL:-local-model}
-
-      # Ollama (Docker service)
-      - OLLAMA_URL=${OLLAMA_URL:-http://ollama:11434}
+      - OLLAMA_URL=http://ollama:11434
       - OLLAMA_MODEL=${OLLAMA_MODEL:-llama3.1:8b}
-
-      # Claude API
       - CLAUDE_API_KEY=${CLAUDE_API_KEY:-}
-      - CLAUDE_MODEL=${CLAUDE_MODEL:-claude-3-5-sonnet-20241022}
-
-      # OpenAI API
+      - CLAUDE_MODEL=${CLAUDE_MODEL:-claude-sonnet-4-5-20250929}
       - OPENAI_API_KEY=${OPENAI_API_KEY:-}
       - OPENAI_MODEL=${OPENAI_MODEL:-gpt-4o}
 
       # Blockchain API Keys
-      - ETHERSCAN_API_KEY=${ETHERSCAN_API_KEY}
-      - ARBISCAN_API_KEY=${ARBISCAN_API_KEY}
-      - INFURA_API_KEY=${INFURA_API_KEY}
+      - ETHERSCAN_API_KEY=${ETHERSCAN_API_KEY:-}
+      - ARBISCAN_API_KEY=${ARBISCAN_API_KEY:-}
+      - INFURA_API_KEY=${INFURA_API_KEY:-}
 
       # Telegram Bot
-      - TELEGRAM_BOT_TOKEN=${TELEGRAM_BOT_TOKEN}
-      - TELEGRAM_CHAT_ID=${TELEGRAM_CHAT_ID}
+      - TELEGRAM_BOT_TOKEN=${TELEGRAM_BOT_TOKEN:-}
+      - TELEGRAM_CHAT_ID=${TELEGRAM_CHAT_ID:-}
 
       # Application Settings
       - POLLING_INTERVAL=${POLLING_INTERVAL:-60}
       - TRANSACTION_THRESHOLD=${TRANSACTION_THRESHOLD:-50}
     volumes:
       - ./logs:/app/logs
-      - ./whale_tracker.log:/app/whale_tracker.log
     depends_on:
+      - mongodb
+      - redis
       - ollama
     networks:
       - whale-tracker-network
     extra_hosts:
       - "host.docker.internal:host-gateway"
 
-  # Ollama LLM server
+  # ============================================
+  # MongoDB - Primary data store
+  # ============================================
+  mongodb:
+    image: mongo:7
+    container_name: whale-tracker-mongodb
+    restart: unless-stopped
+    ports:
+      - "27017:27017"
+    volumes:
+      - mongodb-data:/data/db
+    networks:
+      - whale-tracker-network
+    healthcheck:
+      test: ["CMD", "mongosh", "--eval", "db.adminCommand('ping')"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+
+  # ============================================
+  # Redis - Caching, rate limiting, pub/sub
+  # ============================================
+  redis:
+    image: redis:7-alpine
+    container_name: whale-tracker-redis
+    restart: unless-stopped
+    ports:
+      - "6379:6379"
+    volumes:
+      - redis-data:/data
+    networks:
+      - whale-tracker-network
+    healthcheck:
+      test: ["CMD", "redis-cli", "ping"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+
+  # ============================================
+  # Ollama LLM server (optional)
+  # ============================================
   ollama:
     image: ollama/ollama:latest
     container_name: ollama
@@ -90,6 +185,10 @@ services:
     restart: "no"
 
 volumes:
+  mongodb-data:
+    driver: local
+  redis-data:
+    driver: local
   ollama-data:
     driver: local
 

@@ -1,4 +1,4 @@
-# Dockerfile for Whale Tracker with AI Reasoning
+# Dockerfile for Whale Tracker SaaS Platform
 FROM python:3.11-slim
 
 # Set working directory
@@ -27,8 +27,9 @@ RUN mkdir -p logs
 ENV PYTHONUNBUFFERED=1
 ENV PYTHONDONTWRITEBYTECODE=1
 
-# Expose port for healthcheck (optional)
+# Expose API port
 EXPOSE 8000
 
-# Run the application
-CMD ["python", "main.py"]
+# Default: run the API server
+# Override via docker-compose command for worker mode
+CMD ["python", "api_server.py"]
