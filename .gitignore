@@ -1,0 +1,40 @@
+/venv
+/whale_tracker.log
+
+# Python cache
+__pycache__/
+*.py[cod]
+*$py.class
+*.so
+.Python
+.coverage
+# Runtime data — never commit
+data/
+*.db
+*.sqlite
+*.sqlite3
+whale_tracker.log
+logs/
+
+# Local environment
+.env
+.env.local
+
+# License cache
+data/whale_tracker.db
+
+# Internal / team-facing docs — not for the public repo
+VOICE.md
+CLAUDE.md
+Claude.md
+Governance-C.md
+Memory-Bank/
+RECAP.md
+ANALYSIS.md
+CHANGES.md
+ETHERSCAN_V2_MIGRATION.md
+TESTING.md
+BUSINESS_MODEL_CANVAS.md
+
+# Local archive of files removed from the public repo — never publish
+/eliminati/

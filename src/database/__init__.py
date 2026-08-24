@@ -1,0 +1,36 @@
+# Storage locale self-hosted (percorso principale)
+from src.database.sqlite import (
+    init_db,
+    get_connection,
+    save_signal,
+    get_signals,
+    count_signals,
+    add_wallet,
+    remove_wallet,
+    get_wallets,
+    count_wallets,
+    is_tx_processed,
+    mark_tx_processed,
+    cleanup_old_transactions,
+    get_config,
+    set_config,
+    get_license_tier,
+)
+
+__all__ = [
+    "init_db",
+    "get_connection",
+    "save_signal",
+    "get_signals",
+    "count_signals",
+    "add_wallet",
+    "remove_wallet",
+    "get_wallets",
+    "count_wallets",
+    "is_tx_processed",
+    "mark_tx_processed",
+    "cleanup_old_transactions",
+    "get_config",
+    "set_config",
+    "get_license_tier",
+]

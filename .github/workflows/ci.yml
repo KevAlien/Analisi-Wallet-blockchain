@@ -1,0 +1,119 @@
+name: CI
+
+on:
+  push:
+    branches: [main, develop]
+  pull_request:
+    branches: [main]
+
+env:
+  PYTHON_VERSION: "3.11"
+
+jobs:
+
+  # ──────────────────────────────────────────
+  # Lint
+  # ──────────────────────────────────────────
+  lint:
+    name: Lint (flake8)
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-python@v5
+        with:
+          python-version: ${{ env.PYTHON_VERSION }}
+          cache: pip
+
+      - name: Install linter
+        run: pip install flake8==7.1.1
+
+      - name: Run flake8
+        run: flake8 src/
+
+  # ──────────────────────────────────────────
+  # Tests
+  # ──────────────────────────────────────────
+  test:
+    name: Test (Python ${{ matrix.python-version }})
+    runs-on: ubuntu-latest
+    strategy:
+      matrix:
+        python-version: ["3.10", "3.11", "3.12"]
+
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-python@v5
+        with:
+          python-version: ${{ matrix.python-version }}
+          cache: pip
+
+      - name: Install dependencies
+        run: pip install -r requirements.txt
+
+      - name: Run tests
+        run: pytest tests/ -q --tb=short
+        env:
+          DB_PATH: ":memory:"
+
+      - name: Check coverage threshold (Python 3.11 only)
+        if: matrix.python-version == '3.11'
+        # Baseline post-FOSS (2026-08-24): la rimozione del layer licensing
+        # ha eliminato i test che coprivano quella area (43% attuale).
+        # Obiettivo dichiarato: risalire al 70% coprendo reasoning e fetch.
+        run: pytest tests/ --cov=src --cov-report=term-missing --cov-fail-under=40
+        env:
+          DB_PATH: ":memory:"
+
+  # ──────────────────────────────────────────
+  # Docker build check
+  # ──────────────────────────────────────────
+  docker:
+    name: Docker build
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Build image
+        run: docker build -t sentrycage:ci .
+
+      - name: Smoke test — imports and DB init
+        run: |
+          docker run --rm \
+            -e DB_PATH=/tmp/test.db \
+            -e ETHERSCAN_API_KEY=dummy \
+            -e TELEGRAM_BOT_TOKEN=dummy \
+            -e TELEGRAM_CHAT_ID=0 \
+          sentrycage:ci \
+          python -c "
+          from src.database.sqlite import init_db
+          from src.config.license import get_active_features
+          init_db('/tmp/test.db')
+          f = get_active_features(db_path='/tmp/test.db')
+          print('Tier:', f.display_tier)
+          assert f.tier == 'open-source', f'Unexpected tier: {f.tier}'
+          print('CI smoke test passed')
+          "
+
+  # ──────────────────────────────────────────
+  # License CLI check
+  # ──────────────────────────────────────────
+  license-cli:
+    name: License CLI
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-python@v5
+        with:
+          python-version: ${{ env.PYTHON_VERSION }}
+          cache: pip
+
+      - name: Install dependencies
+        run: pip install -r requirements.txt
+
+      - name: Test license CLI status command
+        run: python -m src.config status
+        env:
+          DB_PATH: /tmp/ci_license_test.db

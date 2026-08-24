@@ -1,0 +1,7 @@
+[flake8]
+# Baseline accettata al rilascio FOSS (2026-08-24): lo stile cosmetico
+# (spazi, righe lunghe, layout) non è gated; restano attivi i controlli
+# semantici: F401 import inutilizzati, F841 variabili mai usate, E7xx.
+max-line-length = 100
+extend-ignore = E203, W503, E501, W291, W292, W293, E302, E303, E305, E128, E129
+exclude = .git, __pycache__, eliminati, venv, data, docs
